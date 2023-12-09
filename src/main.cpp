@@ -31,17 +31,28 @@ bool elementInDeque(Vector2 elem, std::deque<Vector2> deque)
   return false;
 }
 
+bool isPaused{false};
+
 class Food
 {
 public:
   Vector2 position;
+  Texture2D texture;
+
   Food(std::deque<Vector2> snakeBody)
   {
+    Image image = LoadImage("apple.png");
+    texture = LoadTextureFromImage(image);
+    texture.height = {blockSize};
+    texture.width = {blockSize};
+    UnloadImage(image);
     position = randomPosition(snakeBody);
   }
+
   void draw()
   {
-    DrawRectangle(padding + position.x * blockSize, padding + position.y * blockSize, blockSize, blockSize, RED);
+    // DrawRectangle(padding + position.x * blockSize, padding + position.y * blockSize, blockSize, blockSize, RED);
+    DrawTexture(texture, padding + position.x * blockSize, padding + position.y * blockSize, WHITE);
   }
 
   Vector2 randomBlock()
@@ -61,6 +72,11 @@ public:
     }
     return position;
   }
+
+  ~Food()
+  {
+    UnloadTexture(texture);
+  }
 };
 
 class Snake
@@ -76,7 +92,14 @@ public:
     {
       float x = snakeBody[i].x;
       float y = snakeBody[i].y;
-      DrawRectangle(padding + x * blockSize, padding + y * blockSize, blockSize, blockSize, BLUE);
+      if (i == 0)
+      {
+        DrawRectangle(padding + x * blockSize, padding + y * blockSize, blockSize, blockSize, DARKBLUE);
+      }
+      else
+      {
+        DrawRectangle(padding + x * blockSize, padding + y * blockSize, blockSize, blockSize, BLUE);
+      }
     }
   }
 
@@ -170,40 +193,54 @@ int main()
 
   InitWindow(2 * padding + blockSize * blockCount, 2 * padding + blockSize * blockCount, title);
   InitGame game;
+  SetTargetFPS(60);
 
   while (!WindowShouldClose())
   {
+    if (IsKeyPressed(KEY_SPACE))
+    {
+      isPaused = !isPaused;
+    }
+
+    if (isPaused)
+    {
+      DrawText("Paused", 210, 245, 50, DARKGREEN);
+    }
+
     BeginDrawing();
-    if (slowDown(0.15))
+    if (!isPaused)
     {
-      game.update();
+      ClearBackground(WHITE);
+      if (slowDown(0.13))
+      {
+        game.update();
+      }
+
+      if (IsKeyPressed(KEY_UP) && game.snake.direction.y != 1)
+      {
+        game.snake.direction = {0, -1};
+        game.isRunning = true;
+      }
+
+      if (IsKeyPressed(KEY_DOWN) && game.snake.direction.y != -1)
+      {
+        game.snake.direction = {0, 1};
+        game.isRunning = true;
+      }
+
+      if (IsKeyPressed(KEY_LEFT) && game.snake.direction.x != 1)
+      {
+        game.snake.direction = {-1, 0};
+        game.isRunning = true;
+      }
+
+      if (IsKeyPressed(KEY_RIGHT) && game.snake.direction.x != -1)
+      {
+        game.snake.direction = {1, 0};
+        game.isRunning = true;
+      }
     }
 
-    if (IsKeyPressed(KEY_UP) && game.snake.direction.y != 1)
-    {
-      game.snake.direction = {0, -1};
-      game.isRunning = true;
-    }
-
-    if (IsKeyPressed(KEY_DOWN) && game.snake.direction.y != -1)
-    {
-      game.snake.direction = {0, 1};
-      game.isRunning = true;
-    }
-
-    if (IsKeyPressed(KEY_LEFT) && game.snake.direction.x != 1)
-    {
-      game.snake.direction = {-1, 0};
-      game.isRunning = true;
-    }
-
-    if (IsKeyPressed(KEY_RIGHT) && game.snake.direction.x != -1)
-    {
-      game.snake.direction = {1, 0};
-      game.isRunning = true;
-    }
-
-    ClearBackground(WHITE);
     DrawRectangleLinesEx(Rectangle{(float)padding - 5, (float)padding - 5, (float)blockSize * (float)blockCount + 10, (float)blockSize * (float)blockCount + 10}, 5, SKYBLUE);
     DrawText("Esnake", padding, 10, 30, BLACK);
     DrawText(TextFormat("Score: %i", game.score), padding + 360, 10, 30, BLACK);
